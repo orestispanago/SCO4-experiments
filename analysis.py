@@ -1,5 +1,7 @@
+import json
+from scipy import stats
 import pandas as pd
-import matplotlib.pyplot as plt
+from plotting import plot_col, plot_efficiency_dt_i, plot_multiple, plot_stable
 
 def read(fname):
     start = pd.to_datetime(fname.split(".")[0], format="%y%m%d_%H%M%S")
@@ -10,23 +12,17 @@ def read(fname):
     df = df.tz_localize('Europe/Berlin').tz_convert('UTC')
     return df
 
-
-def plot_col(col, ylabel=''):
-    col.plot(style='.')
-    plt.ylabel(ylabel)
-    plt.xlabel("Time (UTC)")
-    plt.grid(which='both')
-    plt.show()
-
-def plot_multiple(df, col_list, ylabel=''):
-    for col in col_list:
-        df[col].plot(style='.')
-    plt.ylabel(ylabel)
-    plt.legend()
-    plt.xlabel("Time (UTC)")
-    plt.grid(which='both')
-    plt.show()
-    
+def save_regresults(linregress):
+    linregress_dict = {
+        "slope": linregress.slope,
+        "intercept": linregress.intercept,
+        "slope_stderr":linregress.stderr,
+        "intercept_stderr": linregress.intercept_stderr,
+        "rvalue": linregress.rvalue,
+        "pvalue":linregress.pvalue
+        }
+    with open("linregress_stats.json", "w") as f:
+        json.dump(linregress_dict,f, indent=4)
     
 df = read("220719_122000.csv")
 
@@ -34,9 +30,10 @@ df = df.loc['2022-07-19 10:40:00+0000' : '2022-07-19 14:00:00+0000']
 
 df['Tout_Tin'] = df['T_out'] - df['T_in']
 df['q_dot'] = 4.2 * df['m_dot'] * df['Tout_Tin']
-df['eff'] = df['q_dot']/(df['I_dir'] * 1.5) # TODO check collector dimensions
+df['eff'] = df['q_dot']/(df['I_dir'] * 1.15*1.79) # TODO check collector dimensions
 
 df['Tin_Tamb'] = df['T_in'] - df['T_amb']
+df['Tin_Tamb_I'] = df['Tin_Tamb']/df['I_dir']
 
 plot_col(df['m_dot'], ylabel="$\dot m \ (g \cdot s^{-1})$")
 plot_col(df['I_dir'], ylabel='$DNI \ (W \cdot m^{-2})$')
@@ -48,6 +45,10 @@ plot_col(df['Tout_Tin'],  ylabel='$T_{out} - T_{in} \ (\degree C)$')
 # plot_col(df['eff'], ylabel="Efficiency")
 plot_col(df['q_dot'], ylabel='$\dot Q \ (W)$')
 
-df['T_in'].plot()
-df[df.diff()['T_in'] < 0.1]['T_in'].plot(style='.')
-plt.show()
+stable = df[df['T_in'].diff().rolling(window=10).max() <= 0.5]
+# stable = stable.resample('1min').mean()
+plot_stable(df, stable)
+
+linregress = stats.linregress(stable["Tin_Tamb_I"], stable["eff"])
+save_regresults(linregress)
+plot_efficiency_dt_i(stable, linregress)
