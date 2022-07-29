@@ -30,7 +30,7 @@ df = df.loc['2022-07-19 10:40:00+0000' : '2022-07-19 14:00:00+0000']
 
 df['Tout_Tin'] = df['T_out'] - df['T_in']
 df['q_dot'] = 4.2 * df['m_dot'] * df['Tout_Tin']
-df['eff'] = df['q_dot']/(df['I_dir'] * 1.15*1.79) # TODO check collector dimensions
+df['eff'] = df['q_dot']/(df['I_dir'] * 1.15*1.79)
 
 df['Tin_Tamb'] = df['T_in'] - df['T_amb']
 df['Tin_Tamb_I'] = df['Tin_Tamb']/df['I_dir']
@@ -45,6 +45,7 @@ plot_col(df['Tout_Tin'],  ylabel='$T_{out} - T_{in} \ (\degree C)$')
 # plot_col(df['eff'], ylabel="Efficiency")
 plot_col(df['q_dot'], ylabel='$\dot Q \ (W)$')
 
+df = df[df['T_in']>80]
 stable = df[df['T_in'].diff().rolling(window=10).max() <= 0.5]
 # stable = stable.resample('1min').mean()
 plot_stable(df, stable)

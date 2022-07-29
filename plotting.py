@@ -20,6 +20,7 @@ def plot_col(col, ylabel=''):
     plt.ylabel(ylabel)
     plt.xlabel("Time (UTC)")
     plt.grid(which='both')
+    plt.savefig(col.name)
     plt.show()
 
 def plot_multiple(df, col_list, ylabel=''):
@@ -36,12 +37,13 @@ def plot_stable(df, stable, col='T_in'):
     stable[col].plot(style='.')
     plt.ylabel('$T_{in} \ (\degree C)$')
     plt.xlabel("Time (UTC)")
+    plt.savefig("stable_tin")
     plt.show()
 
 def plot_efficiency_dt_i(df, linregress):
     g = sns.regplot(x=df["Tin_Tamb_I"], 
                     y=df["eff"], 
-                    scatter_kws={'s':1},
+                    scatter_kws={'s':5},
                     line_kws={'label': "$y={0:.2f}x+{1:.2f}$".\
                               format(linregress.slope, linregress.intercept)})
     g.legend()
